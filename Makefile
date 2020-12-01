@@ -3,7 +3,7 @@ HOSTNAME=github.com
 NAMESPACE=kmott
 NAME=habitat
 BINARY=terraform-provisioner-${NAME}
-VERSION=0.0.2
+VERSION=0.1.0
 OS_ARCH=linux_amd64
 
 default: install
@@ -21,7 +21,7 @@ install: build
 	cp dist/${BINARY}_${OS_ARCH}/${BINARY} ~/.terraform.d/plugins/${BINARY}_v${VERSION}
 
 release: test
-	goreleaser release --snapshot --rm-dist --config=.build/.goreleaser.yml
+	goreleaser --rm-dist --config=.goreleaser/.goreleaser.yml
 
 test-acceptance:
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 120m
