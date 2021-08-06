@@ -3,7 +3,7 @@ HOSTNAME=github.com
 NAMESPACE=kmott
 NAME=habitat
 BINARY=terraform-provisioner-${NAME}
-VERSION=0.1.2
+VERSION=0.1.3
 OS_ARCH=linux_amd64
 
 default: install
