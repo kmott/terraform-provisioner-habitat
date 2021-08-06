@@ -303,6 +303,11 @@ func Provision() terraform.ResourceProvisioner {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
+						"reprovision": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
 					},
 				},
 				Optional: true,
@@ -453,6 +458,7 @@ type Service struct {
 	AppName         string
 	Environment     string
 	ServiceGroupKey string
+	Reprovision     bool
 }
 
 func (s *Service) getPackageName(fullName string) string {
@@ -515,16 +521,17 @@ func getServices(v []interface{}) []Service {
 	services := make([]Service, 0, len(v))
 	for _, rawServiceData := range v {
 		serviceData := rawServiceData.(map[string]interface{})
-		name := (serviceData["name"].(string))
-		strategy := (serviceData["strategy"].(string))
-		topology := (serviceData["topology"].(string))
-		channel := (serviceData["channel"].(string))
-		group := (serviceData["group"].(string))
-		url := (serviceData["url"].(string))
-		app := (serviceData["application"].(string))
-		env := (serviceData["environment"].(string))
-		userToml := (serviceData["user_toml"].(string))
-		serviceGroupKey := (serviceData["service_key"].(string))
+		name := serviceData["name"].(string)
+		strategy := serviceData["strategy"].(string)
+		topology := serviceData["topology"].(string)
+		channel := serviceData["channel"].(string)
+		group := serviceData["group"].(string)
+		url := serviceData["url"].(string)
+		app := serviceData["application"].(string)
+		env := serviceData["environment"].(string)
+		userToml := serviceData["user_toml"].(string)
+		serviceGroupKey := serviceData["service_key"].(string)
+		reprovision := serviceData["reprovision"].(bool)
 		var bindStrings []string
 		binds := getBinds(serviceData["bind"].(*schema.Set).List())
 		for _, b := range serviceData["binds"].([]interface{}) {
@@ -548,6 +555,7 @@ func getServices(v []interface{}) []Service {
 			AppName:         app,
 			Environment:     env,
 			ServiceGroupKey: serviceGroupKey,
+			Reprovision:     reprovision,
 		}
 		services = append(services, service)
 	}

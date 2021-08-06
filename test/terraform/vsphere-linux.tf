@@ -2,13 +2,16 @@
 // Linux Habitat Provisioning
 //
 locals {
-  linux-node = {
+  linux-nodes = [{
     id             = vsphere_virtual_machine.linux.id
     name           = vsphere_virtual_machine.linux.name
     address        = vsphere_virtual_machine.linux.default_ip_address
     ctl_secret     = var.habitat.ctl_secret
     gateway_secret = var.habitat.gateway_auth_token
-  }
+    ssh_username   = var.habitat.hab_ssh_username
+    ssh_password   = var.habitat.hab_ssh_password
+    inspec_profile = "linux"
+  }]
 
   linux-node-effortless_user_toml = data.template_file.linux-effortless_user_toml.rendered
 }
@@ -27,7 +30,7 @@ resource "vsphere_virtual_machine" "linux" {
   //
   num_cpus                    = var.machine.cpus
   memory                      = var.machine.memory_mb
-  name                        = format("linux-%s", random_id.id.hex)
+  name                        = "linux"
   resource_pool_id            = data.vsphere_resource_pool.pool.id
   datastore_id                = data.vsphere_datastore.datastores[2].id
   folder                      = var.vsphere.folder
@@ -104,25 +107,27 @@ resource "vsphere_virtual_machine" "linux" {
 
     dynamic "service" {
       for_each = [for s in var.habitat.services : {
-        name      = s.ident
-        topology  = s.topology
-        strategy  = s.strategy
-        user_toml = local.linux-node-effortless_user_toml
-        channel   = s.channel
-        group     = s.group
-        url       = s.url
-        binds     = s.binds
+        name        = s.ident
+        topology    = s.topology
+        strategy    = s.strategy
+        user_toml   = local.linux-node-effortless_user_toml
+        channel     = s.channel
+        group       = s.group
+        url         = s.url
+        binds       = s.binds
+        reprovision = s.reprovision
       }]
 
       content {
-        name      = service.value.name
-        topology  = service.value.topology
-        strategy  = service.value.strategy
-        user_toml = service.value.user_toml
-        channel   = service.value.channel
-        group     = service.value.group
-        url       = service.value.url
-        binds     = service.value.binds
+        name        = service.value.name
+        topology    = service.value.topology
+        strategy    = service.value.strategy
+        user_toml   = service.value.user_toml
+        channel     = service.value.channel
+        group       = service.value.group
+        url         = service.value.url
+        binds       = service.value.binds
+        reprovision = service.value.reprovision
       }
     }
 
@@ -143,7 +148,7 @@ data "template_file" "linux-effortless_user_toml" {
   template = file("effortless/user.tmpl.toml")
 
   vars = {
-    machine_name   = format("linux-%s", random_id.id.hex)
+    machine_name   = "linux"
     machine_domain = "klmh.co"
   }
 }

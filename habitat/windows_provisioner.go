@@ -230,12 +230,28 @@ func (p *provisioner) windowsStartHabitatService(o terraform.UIOutput, comm comm
 		options += fmt.Sprintf(" --bind %s", bind.toBindString())
 	}
 
+	// If the svc is already loaded and we require re-provisioning, unload the service before continuing (don't care
+	// about errors at this point, since if it's not already running we just 'hab svc load' anyways)
+	if service.Reprovision {
+		o.Output(fmt.Sprintf("Unloading service %s due to reprovision ...", service.Name))
+		_ = p.windowsHabitatServiceUnload(o, comm, service)
+	}
+
 	// If the requested service is already loaded, skip re-loading it
 	if err := p.windowsHabitatServiceLoaded(o, comm, service); err != nil {
 		return p.runCommand(o, comm, p.windowsGetCommand(fmt.Sprintf("hab svc load %s %s", service.Name, options)))
 	}
 
 	return nil
+}
+
+// This is a check to see if a habitat svc is already loaded on the machine
+func (p *provisioner) windowsHabitatServiceUnload(o terraform.UIOutput, comm communicator.Communicator, service Service) error {
+	return p.runCommand(o, comm, p.windowsGetCommand(fmt.Sprintf("hab svc unload %s 2>&1 | out-null ; start-sleep -s 3", service.Name)))
+}
+
+func (p *provisioner) windowsHabitatServiceLoaded(o terraform.UIOutput, comm communicator.Communicator, service Service) error {
+	return p.runCommand(o, comm, p.windowsGetCommand(fmt.Sprintf("hab svc status %s 2>&1 | out-null", service.Name)))
 }
 
 func (p *provisioner) windowsInstallHabitatPackage(o terraform.UIOutput, comm communicator.Communicator, service Service) error {
@@ -250,11 +266,6 @@ func (p *provisioner) windowsInstallHabitatPackage(o terraform.UIOutput, comm co
 	}
 
 	return p.runCommand(o, comm, p.windowsGetCommand(fmt.Sprintf("hab pkg install %s %s", service.Name, options)))
-}
-
-// This is a check to see if a habitat svc is already loaded on the machine
-func (p *provisioner) windowsHabitatServiceLoaded(o terraform.UIOutput, comm communicator.Communicator, service Service) error {
-	return p.runCommand(o, comm, p.windowsGetCommand(fmt.Sprintf("hab svc status %s 2>&1 | out-null", service.Name)))
 }
 
 func (p *provisioner) windowsUploadServiceGroupKey(o terraform.UIOutput, comm communicator.Communicator, service Service) error {

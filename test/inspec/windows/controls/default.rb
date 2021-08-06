@@ -18,6 +18,13 @@ control 'terraform-provisioner-habitat-1.0' do
     end
   end
 
+  # Main Habitat Services are running
+  describe command("hab svc status") do
+    its(:exit_status) { should eq 0 }
+    its(:stderr) { should be_empty }
+    its(:stdout) { should match /klm\/effortless(.*)up(.*)up(.*)effortless.default/ }
+  end
+
   # Chef Habitat effortless.spec has correct channel (unstable)
   describe file("C:/hab/sup/default/specs/effortless.spec") do
     it { should exist }
@@ -38,28 +45,21 @@ control 'terraform-provisioner-habitat-1.0' do
     its(:stdout) { should be_empty }
   end
 
-  # Butterfly API should have 4 members
+  # Butterfly API should have 5-9 members
   describe command("(Invoke-WebRequest -Headers @{'Authorization' = 'Bearer ea7-beef'} -Uri 'http://localhost:9631/butterfly' -UseBasicParsing).Content | hab pkg exec core/jq-static jq -r '.member.members | to_entries | length'") do
     its(:exit_status) { should eq 0 }
     its(:stderr) { should be_empty }
-    its(:stdout) { should match /^5/ }
-  end
-
-  # Butterfly API should have all 5 members as alive
-  describe command(%q{(Invoke-WebRequest -Headers @{'Authorization' = 'Bearer ea7-beef'} -Uri 'http://localhost:9631/butterfly' -UseBasicParsing).Content | hab pkg exec core/jq-static jq -r '.member.health | to_entries | .[] | select(.value!=\"Alive\") | .key'}) do
-    its(:exit_status) { should eq 0 }
-    its(:stderr) { should be_empty }
-    its(:stdout) { should match /^$/ }
+    its(:stdout) { should match /^[5-9]/ }
   end
 
   # Census API for effortless.default should have all 5 machines
   describe command(%q{(Invoke-WebRequest -Headers @{'Authorization' = 'Bearer ea7-beef'} -Uri 'http://localhost:9631/census' -UseBasicParsing).Content | hab pkg exec core/jq-static jq -r '.census_groups | .\"effortless.default\" | .population | to_entries | .[] | .value.sys.hostname'}) do
     its(:exit_status) { should eq 0 }
     its(:stderr) { should be_empty }
-    its(:stdout) { should match /^linux-.*$/ }
-    its(:stdout) { should match /^windows-.*$/i }
-    its(:stdout) { should match /^sup-ring-1-.*$/ }
-    its(:stdout) { should match /^sup-ring-2-.*$/ }
-    its(:stdout) { should match /^sup-ring-3-.*$/ }
+    its(:stdout) { should match /^linux/ }
+    its(:stdout) { should match /win/i }
+    its(:stdout) { should match /^sup-ring-1/ }
+    its(:stdout) { should match /^sup-ring-2/ }
+    its(:stdout) { should match /^sup-ring-3/ }
   end
 end

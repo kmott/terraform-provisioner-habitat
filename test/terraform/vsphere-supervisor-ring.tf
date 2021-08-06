@@ -17,7 +17,7 @@ resource "vsphere_virtual_machine" "supervisor-ring" {
   //
   num_cpus                    = var.machine.cpus
   memory                      = var.machine.memory_mb
-  name                        = format("sup-ring-%s-%s", count.index+1, random_id.id.hex)
+  name                        = format("sup-ring-%s", count.index+1)
   resource_pool_id            = data.vsphere_resource_pool.pool.id
   datastore_id                = data.vsphere_datastore.datastores[count.index].id
   folder                      = var.vsphere.folder
@@ -83,6 +83,9 @@ locals {
       address        = vsphere_virtual_machine.supervisor-ring[0].default_ip_address
       ctl_secret     = var.habitat.ctl_secret
       gateway_secret = var.habitat.gateway_auth_token
+      ssh_username   = var.habitat.hab_ssh_username
+      ssh_password   = var.habitat.hab_ssh_password
+      inspec_profile = "linux"
     },
     {
       id             = vsphere_virtual_machine.supervisor-ring[1].id
@@ -90,6 +93,9 @@ locals {
       address        = vsphere_virtual_machine.supervisor-ring[1].default_ip_address
       ctl_secret     = var.habitat.ctl_secret
       gateway_secret = var.habitat.gateway_auth_token
+      ssh_username   = var.habitat.hab_ssh_username
+      ssh_password   = var.habitat.hab_ssh_password
+      inspec_profile = "linux"
     },
     {
       id             = vsphere_virtual_machine.supervisor-ring[2].id
@@ -97,6 +103,9 @@ locals {
       address        = vsphere_virtual_machine.supervisor-ring[2].default_ip_address
       ctl_secret     = var.habitat.ctl_secret
       gateway_secret = var.habitat.gateway_auth_token
+      ssh_username   = var.habitat.hab_ssh_username
+      ssh_password   = var.habitat.hab_ssh_password
+      inspec_profile = "linux"
     }
   ]
 
@@ -135,25 +144,27 @@ resource "null_resource" "habitat-provisioner" {
 
     dynamic "service" {
       for_each = [for s in var.habitat.services : {
-        name      = s.ident
-        topology  = s.topology
-        strategy  = s.strategy
-        user_toml = local.supervisor-ring-effortless-user-toml[count.index]
-        channel   = s.channel
-        group     = s.group
-        url       = s.url
-        binds     = s.binds
+        name        = s.ident
+        topology    = s.topology
+        strategy    = s.strategy
+        user_toml   = local.supervisor-ring-effortless-user-toml[count.index]
+        channel     = s.channel
+        group       = s.group
+        url         = s.url
+        binds       = s.binds
+        reprovision = s.reprovision
       }]
 
       content {
-        name      = service.value.name
-        topology  = service.value.topology
-        strategy  = service.value.strategy
-        user_toml = service.value.user_toml
-        channel   = service.value.channel
-        group     = service.value.group
-        url       = service.value.url
-        binds     = service.value.binds
+        name        = service.value.name
+        topology    = service.value.topology
+        strategy    = service.value.strategy
+        user_toml   = service.value.user_toml
+        channel     = service.value.channel
+        group       = service.value.group
+        url         = service.value.url
+        binds       = service.value.binds
+        reprovision = (count.index == length(local.supervisor-ring-nodes) - 1) ? true : service.value.reprovision
       }
     }
 

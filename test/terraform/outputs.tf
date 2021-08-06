@@ -3,9 +3,9 @@ output "supervisor-ring" {
 }
 
 output "linux" {
-  value = local.linux-node
+  value = local.linux-nodes
 }
 
 output "windows" {
-  value = local.windows-node
+  value = local.windows-nodes
 }
