@@ -2,8 +2,10 @@ package habitat
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"path"
 	"path/filepath"
 	"strings"
@@ -32,6 +34,38 @@ Environment="HAB_LICENSE={{ .License }}"
 
 [Install]
 WantedBy=default.target
+`
+
+const startHabitatScript = `#!/bin/bash
+#
+# This starts or re-starts Habitat to the running system.  Uploaded to /tmp/re-start-habitat.sh, and called by various 
+# steps of the Linux Provisioner to configure the system.
+#
+__SERVICE_NAME="${1:-hab-supervisor.service}"
+__UNIT_FILE="${2:-/etc/systemd/system/${__SERVICE_NAME}}"
+__TMP_UNIT_FILE="${3:-/tmp/${__SERVICE_NAME}}"
+__NEW_CHECKSUM="${4}"
+__EXISTING_CHECKSUM=
+
+if [[ -e "${__UNIT_FILE}" ]]; then
+	__EXISTING_CHECKSUM="$( cat "${__UNIT_FILE}" | sha256sum - | awk -F ' ' '{print $1}' )"
+fi
+
+if [[ "${__EXISTING_CHECKSUM}" != "${__NEW_CHECKSUM}" ]]; then
+	mv "${__TMP_UNIT_FILE}" "${__UNIT_FILE}"
+	systemctl daemon-reload
+	systemctl restart "${__SERVICE_NAME}"
+
+	# Wait for hab-supervisor to come back up
+	__RUNNING="$( hab svc status 2>/dev/null )"
+	while [[ -z "${__RUNNING}" ]]; do
+		echo "Waiting for Habitat to restart ..."
+		sleep 5
+		__RUNNING="$( hab svc status 2>/dev/null )"
+	done
+fi
+
+systemctl enable "${__SERVICE_NAME}"
 `
 
 func (p *provisioner) linuxInstallHabitat(o terraform.UIOutput, comm communicator.Communicator) error {
@@ -193,35 +227,49 @@ func (p *provisioner) linuxStartHabitatUnmanaged(o terraform.UIOutput, comm comm
 }
 
 func (p *provisioner) linuxStartHabitatSystemd(o terraform.UIOutput, comm communicator.Communicator, options string) error {
-	// Create a new template and parse the client config into it
-	unitString := template.Must(template.New("hab-supervisor.service").Parse(systemdUnit))
+	// Upload script
+	if err := comm.Upload("/tmp/re-start-habitat.sh", strings.NewReader(startHabitatScript)); err != nil {
+		return err
+	}
 
-	var buf bytes.Buffer
-	err := unitString.Execute(&buf, p)
+	// Create a new template and parse the client config into it
+	unitString := template.Must(template.New(fmt.Sprintf("%s.service", p.ServiceName)).Parse(systemdUnit))
+	tempDestination := fmt.Sprintf("/tmp/%s.service", p.ServiceName)
+	destination := fmt.Sprintf("/etc/systemd/system/%s.service", p.ServiceName)
+
+	// Checksum for unit string
+	var checksumBuf, fileBuf bytes.Buffer
+	writer := io.MultiWriter(&checksumBuf, &fileBuf)
+	err := unitString.Execute(writer, p)
 	if err != nil {
 		return fmt.Errorf("error executing %s.service template: %s", p.ServiceName, err)
 	}
 
-	if err := p.linuxUploadSystemdUnit(o, comm, &buf); err != nil {
+	hash := sha256.New()
+	if _, err := io.Copy(hash, bytes.NewReader(checksumBuf.Bytes())); err != nil {
+		return err
+	}
+	newChecksum := hash.Sum(nil)
+
+	if err := p.linuxUploadSystemdUnit(o, comm, tempDestination, &fileBuf); err != nil {
 		return err
 	}
 
-	return p.runCommand(o, comm, p.linuxGetCommand(fmt.Sprintf("systemctl enable %s && systemctl start %s", p.ServiceName, p.ServiceName)))
-}
-
-func (p *provisioner) linuxUploadSystemdUnit(o terraform.UIOutput, comm communicator.Communicator, contents *bytes.Buffer) error {
-	destination := fmt.Sprintf("/etc/systemd/system/%s.service", p.ServiceName)
-
-	if p.UseSudo {
-		tempPath := fmt.Sprintf("/tmp/%s.service", p.ServiceName)
-		if err := comm.Upload(tempPath, contents); err != nil {
-			return err
-		}
-
-		return p.runCommand(o, comm, p.linuxGetCommand(fmt.Sprintf("mv %s %s", tempPath, destination)))
+	// Check for (re)start
+	if err := p.runCommand(o, comm, p.linuxGetCommand(fmt.Sprintf("bash /tmp/re-start-habitat.sh \"%s.service\" \"%s\" \"%s\" \"%x\"", p.ServiceName, destination, tempDestination, newChecksum))); err != nil {
+		return err
 	}
 
-	return comm.Upload(destination, contents)
+	// Enable the service
+	if err := p.runCommand(o, comm, p.linuxGetCommand(fmt.Sprintf("systemctl enable %s", p.ServiceName))); err != nil {
+		return err
+	}
+
+	return p.runCommand(o, comm, p.linuxGetCommand("rm /tmp/re-start-habitat.sh"))
+}
+
+func (p *provisioner) linuxUploadSystemdUnit(o terraform.UIOutput, comm communicator.Communicator, tempDestination string, contents *bytes.Buffer) error {
+	return comm.Upload(tempDestination, contents)
 }
 
 func (p *provisioner) linuxUploadRingKey(o terraform.UIOutput, comm communicator.Communicator) error {
@@ -294,6 +342,13 @@ func (p *provisioner) linuxStartHabitatService(o terraform.UIOutput, comm commun
 		options += fmt.Sprintf(" --bind %s", bind.toBindString())
 	}
 
+	// If the svc is already loaded and we require re-provisioning, unload the service before continuing (don't care
+	// about errors at this point, since if it's not already running we just 'hab svc load' anyways)
+	if service.Reprovision {
+		o.Output(fmt.Sprintf("Unloading service %s due to reprovision ...", service.Name))
+		_ = p.linuxHabitatServiceUnload(o, comm, service)
+	}
+
 	// If the requested service is already loaded, skip re-loading it
 	if err := p.linuxHabitatServiceLoaded(o, comm, service); err != nil {
 		return p.runCommand(o, comm, p.linuxGetCommand(fmt.Sprintf("hab svc load %s %s", service.Name, options)))
@@ -305,6 +360,11 @@ func (p *provisioner) linuxStartHabitatService(o terraform.UIOutput, comm commun
 // This is a check to see if a habitat svc is already loaded on the machine
 func (p *provisioner) linuxHabitatServiceLoaded(o terraform.UIOutput, comm communicator.Communicator, service Service) error {
 	return p.runCommand(o, comm, p.linuxGetCommand(fmt.Sprintf("hab svc status %s >/dev/null 2>&1", service.Name)))
+}
+
+// This will quietly unload a habitat svc, ignoring any errors
+func (p *provisioner) linuxHabitatServiceUnload(o terraform.UIOutput, comm communicator.Communicator, service Service) error {
+	return p.runCommand(o, comm, p.linuxGetCommand(fmt.Sprintf("hab svc unload %s > /dev/null 2>&1 ; sleep 3", service.Name)))
 }
 
 // In the future we'll remove the dedicated install once the synchronous load feature in hab-sup is

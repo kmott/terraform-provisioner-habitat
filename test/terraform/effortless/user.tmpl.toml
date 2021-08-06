@@ -11,11 +11,11 @@ interval = 300
 # The number of seconds to wait between Chef Infra Client runs
 # Default value: 1800
 
-splay = 150
+splay = 60
 # A random number of seconds between 0 and $splay to add AFTER the interval. Use this setting to avoid the thundering herd problem. Optimal to always set this equal to the interval, or else you may end up DDOSing your own internal resources.
 # Default value: 1800
 
-splay_first_run = 150
+splay_first_run = 60
 # A random number of seconds between 0 and $splay_first_run BEFORE the first Chef Infra Client runs, only on the first run. Used to avoid the thundering herd problem on new deployments. Optimal to always set to a function of your node count. Add 1 second for each node in your fleet. For example, if you have 1800 nodes, then you should set this value to 1800.
 # Default value: 0
 
@@ -81,7 +81,7 @@ blacklist = [ "floppy" ]
 servers = [ "time.apple.com" ]
 
 [attributes.klm.machine.network]
-dns_resolvers = ["4.2.2.2"]
+dns_resolvers = ["172.16.46.1"]
 
 #
 # This array should contain a list of objects that at a minimum have a 'type' attribute for dhcp vs static config

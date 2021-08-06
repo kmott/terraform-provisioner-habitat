@@ -2,7 +2,7 @@
 
 test/terraform/*.auto.tfvars
 test/terraform/terraform.tfstate*
-test/terraform/.terraform
+test/terraform/.terraform*
 
 bin/*
 dist/*

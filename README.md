@@ -12,7 +12,7 @@ The currently supported version of Chef Habitat is >= v1.5.X.
 
 # Installation
 
-Note that although `terraform-provisioner-habitat` is in the terraform registry, it cannot be installed using a `module` 
+Note that although `terraform-provisioner-habitat` is in the Terraform registry, it cannot be installed using a `module` 
 terraform stanza, as such a configuration will not cause terraform to download the `terraform-provisioner-habitat` binary.
 
 - Download a pre-built binary release from [GitHub Releases](https://github.com/kmott/terraform-provisioner-habitat/releases) page
@@ -58,26 +58,27 @@ service group bindings.
 | `channel` | `string`  | no   | The release channel in the Builder service to use | `stable` |
 | `events` | `string`  | no   | Name of the service group running a Habitat EventSrv to forward Supervisor and service event data to | - |
 | `organization` | `string`  | no   | The organization that the Supervisor and it's subsequent services are part of | `default` |
-| `gateway_auth_token` | `string`  | no   | The http gateway authorization token | - |
-| `builder_auth_token` | `string`  | no   | The builder authorization token when using a private origin | - |
-| `service` | `list(object)`  | no   | One or more `service` blocks to start Habitat services after installation | - |
-| `event_stream` | `object`  | no   | One `event_stream` block to configure the supervisor with during startup | - |
+| `gateway_auth_token` | `string` | no   | The http gateway authorization token | - |
+| `builder_auth_token` | `string` | no   | The builder authorization token when using a private origin | - |
+| `service` | `list(object)` | no   | One or more `service` blocks to start Habitat services after installation | - |
+| `event_stream` | `object` | no   | One `event_stream` block to configure the supervisor with during startup | - |
 
 ## `service` Arguments
 | Name | Type | Required? | Description | Default |
 |------|------|-----------|-------------|---------|
-| `name` | `string`  | yes | The Habitat package identifier of the service to run (e.g., `core/haproxy` or `core/redis/3.2.4/20171002182640`) | - |
-| `binds` | `list(string)`  | no | An list of bind specifications (ie `binds = ["backend:nginx.default"]`) | - |
-| `bind` | `block`  | no | An alternative way of declaring binds.  This method can be easier to deal with when populating values from other values or variable inputs without having to do string interpolation. The example below is equivalent to `binds = ["backend:nginx.default"]`: | - |
-| `topology` | `string`  | no | Topology to start service in. Possible values `standalone` or `leader` | `standalone` |
-| `strategy` | `string`  | no | Update strategy to use. Possible values `at-once`, `rolling` or `none` | `none` |
-| `user_toml` | `string`  | no | TOML formatted user configuration for the service. Easiest to source from a file (eg `user_toml = "${file("conf/redis.toml")}"`) | - |
-| `channel` | `string`  | no | The release channel in the Builder service to use | `stable` |
-| `group` | `string`  | no | The service group to join | `default` |
-| `url` | `string`  | no | The URL of a Builder service to download packages and receive updates from | `https://bldr.habitat.sh` |
-| `application` | `string`  | no | The application name | - |
-| `environment` | `string`  | no | The environment name | - |
-| `service_key` | `string`  | no | The key content of a service private key, if using service group encryption.  Easiest to source from a file (eg `service_key = "${file("conf/redis.default@org-123456789.box.key")}"`) | - |
+| `name` | `string` | yes | The Habitat package identifier of the service to run (e.g., `core/haproxy` or `core/redis/3.2.4/20171002182640`) | - |
+| `binds` | `list(string)` | no | An list of bind specifications (ie `binds = ["backend:nginx.default"]`) | - |
+| `bind` | `block` | no | An alternative way of declaring binds.  This method can be easier to deal with when populating values from other values or variable inputs without having to do string interpolation. The example below is equivalent to `binds = ["backend:nginx.default"]`: | - |
+| `topology` | `string` | no | Topology to start service in. Possible values `standalone` or `leader` | `standalone` |
+| `strategy` | `string` | no | Update strategy to use. Possible values `at-once`, `rolling` or `none` | `none` |
+| `user_toml` | `string` | no | TOML formatted user configuration for the service. Easiest to source from a file (eg `user_toml = "${file("conf/redis.toml")}"`) | - |
+| `channel` | `string` | no | The release channel in the Builder service to use | `stable` |
+| `group` | `string` | no | The service group to join | `default` |
+| `url` | `string` | no | The URL of a Builder service to download packages and receive updates from | `https://bldr.habitat.sh` |
+| `application` | `string` | no | The application name | - |
+| `environment` | `string` | no | The environment name | - |
+| `service_key` | `string` | no | The key content of a service private key, if using service group encryption.  Easiest to source from a file (eg `service_key = "${file("conf/redis.default@org-123456789.box.key")}"`) | - |
+| `reprovision` | `bool` | no | When set to `true`, unloads a service before `hab svc load` (use for cases where you need to manually re-load a service)  | - |
 
 ```hcl
 # Alternate `bind` block definition for service group bindings
@@ -113,8 +114,8 @@ the standard `TF_ACC=1` testing methodology, and can be invoked by running:
 
 `kmott@kmott-sabayon ~/terraform-provisioner-habitat $ make test-acceptance`
 
-Integration testing is a bit more involved, deploying several virtual machines to a vCenter cluster, and invoking Chef Inspec
-tests against them.
+Integration testing is a bit more involved, deploying several virtual machines to a vCenter cluster, and invoking 
+Terratest + Chef Inspec tests against them.
 
 # Future Considerations
 

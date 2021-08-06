@@ -3,7 +3,7 @@
 //
 data "vsphere_host" "hosts" {
   count = 3
-  name          = format("klm-vms-0%s.klmh.co", count.index+1)
+  name          = format("172.16.46.20%s", count.index+1)
   datacenter_id = data.vsphere_datacenter.dc.id
 }
 
