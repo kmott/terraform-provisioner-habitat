@@ -20,8 +20,10 @@ install: build
 	mkdir -p ~/.terraform.d/plugins
 	cp dist/${BINARY}_${OS_ARCH}/${BINARY} ~/.terraform.d/plugins/${BINARY}_v${VERSION}
 
-release: all test-integration
-	goreleaser --rm-dist --config=.goreleaser/.goreleaser.yml
+release:
+	@git tag -a v${VERSION} -m "Tag v${VERSION}"
+	@git push origin v${VERSION}
+	@goreleaser --rm-dist --config=.goreleaser/.goreleaser.yml
 
 test-acceptance:
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 5m
