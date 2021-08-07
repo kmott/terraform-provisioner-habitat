@@ -69,7 +69,8 @@ variable "habitat" {
       group              = string
       url                = string
       binds              = list(string)
-      reprovision        = bool
+      reload             = bool
+      unload             = bool
     }))
   })
 }

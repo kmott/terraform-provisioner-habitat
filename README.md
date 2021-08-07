@@ -78,7 +78,8 @@ service group bindings.
 | `application` | `string` | no | The application name | - |
 | `environment` | `string` | no | The environment name | - |
 | `service_key` | `string` | no | The key content of a service private key, if using service group encryption.  Easiest to source from a file (eg `service_key = "${file("conf/redis.default@org-123456789.box.key")}"`) | - |
-| `reprovision` | `bool` | no | When set to `true`, unloads a service before `hab svc load` (use for cases where you need to manually re-load a service)  | - |
+| `reload` | `bool` | no | When set to `true`, unloads a service before `hab svc load` (use for cases where you need to manually re-load a service)  | - |
+| `unload` | `bool` | no | When set to `true`, ensures a service is unloaded from the supervisor (mutually exclusive with `reload`) | - |
 
 ```hcl
 # Alternate `bind` block definition for service group bindings

@@ -1,7 +1,8 @@
-export GOPATH ?= ${HOME}/go
-export GOBIN  ?= ${GOPATH}/bin
-export GOPKG  ?= ${GOPATH}/pkg
-PATH          := $(PATH):${GOBIN}
+export GOPATH                 ?= ${HOME}/go
+export GOBIN                  ?= ${GOPATH}/bin
+export GOPKG                  ?= ${GOPATH}/pkg
+PATH                          := $(PATH):${GOBIN}
+export TERRATEST_SKIP_CLEANUP ?= false
 
 all: preflight-check tidy vendor
 	@ginkgo -failFast -v -timeout 30m ./integration

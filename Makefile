@@ -3,7 +3,7 @@ HOSTNAME=github.com
 NAMESPACE=kmott
 NAME=habitat
 BINARY=terraform-provisioner-${NAME}
-VERSION=0.1.3
+VERSION=0.1.4
 OS_ARCH=linux_amd64
 
 default: install
@@ -13,7 +13,7 @@ all: clean test-acceptance install
 lint:
 	golangci-lint run habitat/...
 
-build: lint
+build: test-acceptance lint
 	goreleaser build --snapshot --rm-dist --config=.goreleaser/.goreleaser.yml
 
 install: build
@@ -24,6 +24,8 @@ release:
 	@git tag -a v${VERSION} -m "Tag v${VERSION}"
 	@git push origin v${VERSION}
 	@goreleaser --rm-dist --config=.goreleaser/.goreleaser.yml
+
+test: test-acceptance test-integration
 
 test-acceptance:
 	TF_ACC=1 go test $(TEST) -v $(TESTARGS) -timeout 5m

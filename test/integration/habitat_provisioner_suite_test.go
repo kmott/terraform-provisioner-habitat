@@ -53,9 +53,9 @@ var _ = Describe("Habitat Provisioner", func() {
 			// Re-apply terraform state change
 			output, err := terraform.InitAndApplyE(t, defaultTerraformOptions)
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(output).ShouldNot(ContainSubstring("null_resource.habitat-provisioner[0] (habitat): Unloading service klm/effortless due to reprovision"))
-			Expect(output).ShouldNot(ContainSubstring("null_resource.habitat-provisioner[1] (habitat): Unloading service klm/effortless due to reprovision"))
-			Expect(output).Should(ContainSubstring("null_resource.habitat-provisioner[2] (habitat): Unloading service klm/effortless due to reprovision"))
+			Expect(output).ShouldNot(ContainSubstring("null_resource.habitat-provisioner[0] (habitat): Unloading service klm/effortless due to reload"))
+			Expect(output).ShouldNot(ContainSubstring("null_resource.habitat-provisioner[1] (habitat): Unloading service klm/effortless due to reload"))
+			Expect(output).Should(ContainSubstring("null_resource.habitat-provisioner[2] (habitat): Unloading service klm/effortless due to reload"))
 
 			// Get output from Terraform
 			output, err = terraform.OutputJsonE(t, defaultTerraformOptions, "")

@@ -303,7 +303,12 @@ func Provision() terraform.ResourceProvisioner {
 							Type:     schema.TypeString,
 							Optional: true,
 						},
-						"reprovision": &schema.Schema{
+						"reload": &schema.Schema{
+							Type:     schema.TypeBool,
+							Optional: true,
+							Default:  false,
+						},
+						"unload": &schema.Schema{
 							Type:     schema.TypeBool,
 							Optional: true,
 							Default:  false,
@@ -458,7 +463,8 @@ type Service struct {
 	AppName         string
 	Environment     string
 	ServiceGroupKey string
-	Reprovision     bool
+	Reload          bool
+	Unload          bool
 }
 
 func (s *Service) getPackageName(fullName string) string {
@@ -531,7 +537,8 @@ func getServices(v []interface{}) []Service {
 		env := serviceData["environment"].(string)
 		userToml := serviceData["user_toml"].(string)
 		serviceGroupKey := serviceData["service_key"].(string)
-		reprovision := serviceData["reprovision"].(bool)
+		reload := serviceData["reload"].(bool)
+		unload := serviceData["unload"].(bool)
 		var bindStrings []string
 		binds := getBinds(serviceData["bind"].(*schema.Set).List())
 		for _, b := range serviceData["binds"].([]interface{}) {
@@ -555,7 +562,8 @@ func getServices(v []interface{}) []Service {
 			AppName:         app,
 			Environment:     env,
 			ServiceGroupKey: serviceGroupKey,
-			Reprovision:     reprovision,
+			Reload:          reload,
+			Unload:          unload,
 		}
 		services = append(services, service)
 	}

@@ -230,16 +230,18 @@ func (p *provisioner) windowsStartHabitatService(o terraform.UIOutput, comm comm
 		options += fmt.Sprintf(" --bind %s", bind.toBindString())
 	}
 
-	// If the svc is already loaded and we require re-provisioning, unload the service before continuing (don't care
+	// If the svc is already loaded and we require re-loading, unload the service before continuing (don't care
 	// about errors at this point, since if it's not already running we just 'hab svc load' anyways)
-	if service.Reprovision {
-		o.Output(fmt.Sprintf("Unloading service %s due to reprovision ...", service.Name))
+	if service.Reload || service.Unload {
+		o.Output(fmt.Sprintf("Unloading service %s due to reload ...", service.Name))
 		_ = p.windowsHabitatServiceUnload(o, comm, service)
 	}
 
 	// If the requested service is already loaded, skip re-loading it
-	if err := p.windowsHabitatServiceLoaded(o, comm, service); err != nil {
-		return p.runCommand(o, comm, p.windowsGetCommand(fmt.Sprintf("hab svc load %s %s", service.Name, options)))
+	if !service.Unload {
+		if err := p.windowsHabitatServiceLoaded(o, comm, service); err != nil {
+			return p.runCommand(o, comm, p.windowsGetCommand(fmt.Sprintf("hab svc load %s %s", service.Name, options)))
+		}
 	}
 
 	return nil

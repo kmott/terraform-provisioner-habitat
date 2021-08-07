@@ -115,7 +115,8 @@ resource "vsphere_virtual_machine" "windows" {
         group       = s.group
         url         = s.url
         binds       = s.binds
-        reprovision = s.reprovision
+        reload      = s.reload
+        unload      = s.unload
       }]
 
       content {
@@ -127,7 +128,8 @@ resource "vsphere_virtual_machine" "windows" {
         group       = service.value.group
         url         = service.value.url
         binds       = service.value.binds
-        reprovision = service.value.reprovision
+        reload      = service.value.reload
+        unload      = service.value.unload
       }
     }
 

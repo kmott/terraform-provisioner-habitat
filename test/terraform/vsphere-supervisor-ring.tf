@@ -152,7 +152,8 @@ resource "null_resource" "habitat-provisioner" {
         group       = s.group
         url         = s.url
         binds       = s.binds
-        reprovision = s.reprovision
+        reload      = s.reload
+        unload      = s.unload
       }]
 
       content {
@@ -164,7 +165,8 @@ resource "null_resource" "habitat-provisioner" {
         group       = service.value.group
         url         = service.value.url
         binds       = service.value.binds
-        reprovision = (count.index == length(local.supervisor-ring-nodes) - 1) ? true : service.value.reprovision
+        reload      = (count.index == length(local.supervisor-ring-nodes) - 1) ? true : service.value.reload
+        unload      = service.value.unload
       }
     }
 

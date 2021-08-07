@@ -382,7 +382,7 @@ func TestLinuxProvisioner_linuxStartHabitatService(t *testing.T) {
 						"channel":     "stable",
 						"user_toml":   "[config]\nlisten = 0.0.0.0:8080",
 						"service_key": "dead-beef\nabc1234567890",
-						"reprovision": "true",
+						"reload":      "true",
 						"bind": []interface{}{
 							map[string]interface{}{
 								"alias":   "backend",
@@ -398,7 +398,7 @@ func TestLinuxProvisioner_linuxStartHabitatService(t *testing.T) {
 						"channel":     "staging",
 						"user_toml":   "[config]\nlisten = 0.0.0.0:443",
 						"service_key": "ea7-beef\ncba9876543210",
-						"reprovision": "true",
+						"reload":      "true",
 					},
 				},
 			},
